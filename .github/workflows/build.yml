@@ -11,14 +11,14 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential gawk git gettext libssl-dev xsltproc rsync wget unzip python3 curl
+          sudo apt-get install -y build-essential gawk git gettext libssl-dev xsltproc rsync wget unzip python3 curl zstd
 
       - name: Download OpenWrt SDK
         run: |
-          SDK_FILE=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1)
-          echo "SDK File: $SDK_FILE"
+          SDK_FILE=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.\(zst\|xz\)' | head -n 1)
+          echo "Found SDK: $SDK_FILE"
           wget "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILE"
-          tar -xf openwrt-sdk-*.tar.xz
+          tar -xf openwrt-sdk-*.tar.*
           mv openwrt-sdk-* sdk
 
       - name: Clone OAF Repo
@@ -26,7 +26,7 @@ jobs:
           cd sdk
           git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
 
-      - name: Compile OAF Packages
+      - name: Compile OAF
         run: |
           cd sdk
           ./scripts/feeds update -a
@@ -37,7 +37,7 @@ jobs:
           make defconfig
           make package/OpenAppFilter/compile V=s -j$(nproc)
 
-      - name: Upload IPK Artifacts
+      - name: Upload IPK
         uses: actions/upload-artifact@v4
         with:
           name: oaf-ipk-24.10.2
