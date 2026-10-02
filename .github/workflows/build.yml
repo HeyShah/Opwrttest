@@ -11,11 +11,13 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential gawk git gettext libssl-dev xsltproc rsync wget unzip python3
+          sudo apt-get install -y build-essential gawk git gettext libssl-dev xsltproc rsync wget unzip python3 curl
 
       - name: Download OpenWrt SDK
         run: |
-          wget https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/openwrt-sdk-24.10.2-ipq40xx-chromium_gcc-13.3.0_musl.Linux-x86_64.tar.xz
+          SDK_FILENAME=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1)
+          echo "Found SDK: $SDK_FILENAME"
+          wget "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILENAME"
           tar -xf openwrt-sdk-*.tar.xz
           mv openwrt-sdk-* sdk
 
