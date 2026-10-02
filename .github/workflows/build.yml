@@ -1,0 +1,39 @@
+name: Build OpenAppFilter
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gawk git gettext libssl-dev xsltproc rsync wget unzip python3
+
+      - name: Download OpenWrt SDK for Google AC1304 (ipq40xx)
+        run: |
+          wget https://downloads.openwrt.org/releases/23.05.2/targets/ipq40xx/generic/openwrt-sdk-23.05.2-ipq40xx-generic_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+          tar -xf openwrt-sdk-*.tar.xz
+          mv openwrt-sdk-* sdk
+
+      - name: Clone OAF Repo
+        run: |
+          cd sdk
+          git clone https://github.com/destan19/OpenAppFilter.git package/oaf
+
+      - name: Compile OAF
+        run: |
+          cd sdk
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          make defconfig
+          echo "CONFIG_PACKAGE_luci-app-oaf=y" >> .config
+          make package/oaf/compile V=s -j$(nproc)
+
+      - name: Upload IPK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: oaf-ipk-packages
+          path: sdk/bin/packages/arm_cortex-a7_neon-vfpv4/base/*.ipk
