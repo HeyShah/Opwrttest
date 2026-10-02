@@ -15,28 +15,30 @@ jobs:
 
       - name: Download OpenWrt SDK
         run: |
-          SDK_FILENAME=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1)
-          echo "Found SDK: $SDK_FILENAME"
-          wget "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILENAME"
+          SDK_FILE=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1)
+          echo "SDK File: $SDK_FILE"
+          wget "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILE"
           tar -xf openwrt-sdk-*.tar.xz
           mv openwrt-sdk-* sdk
 
       - name: Clone OAF Repo
         run: |
           cd sdk
-          git clone https://github.com/destan19/OpenAppFilter.git package/oaf
+          git clone https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
 
-      - name: Compile OAF
+      - name: Compile OAF Packages
         run: |
           cd sdk
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          make defconfig
           echo "CONFIG_PACKAGE_luci-app-oaf=y" >> .config
-          make package/oaf/compile V=s -j$(nproc)
+          echo "CONFIG_PACKAGE_open-app-filter=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-oaf=y" >> .config
+          make defconfig
+          make package/OpenAppFilter/compile V=s -j$(nproc)
 
-      - name: Upload IPK
+      - name: Upload IPK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: oaf-ipk
-          path: sdk/bin/packages/arm_cortex-a7_neon-vfpv4/base/*.ipk
+          name: oaf-ipk-24.10.2
+          path: sdk/bin/**/*.ipk
