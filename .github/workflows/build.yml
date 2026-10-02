@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Install Dependencies
         run: |
@@ -15,11 +16,21 @@ jobs:
 
       - name: Download OpenWrt SDK
         run: |
-          SDK_FILE=$(curl -s https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ | grep -o 'openwrt-sdk-[^"]*\.tar\.\(zst\|xz\)' | head -n 1)
+          set -e
+
+          SDK_FILE=$(curl -fsSL https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/ \
+            | grep -oE 'openwrt-sdk-[^"]+\.tar\.(zst|xz)' | head -n 1)
+
+          if [ -z "$SDK_FILE" ]; then
+            echo "SDK not found"
+            exit 1
+          fi
+
           echo "Found SDK: $SDK_FILE"
-          wget "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILE"
-          tar -xf openwrt-sdk-*.tar.*
-          mv openwrt-sdk-* sdk
+          wget -q "https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/chromium/$SDK_FILE"
+
+          mkdir -p sdk
+          tar -xf "$SDK_FILE" -C sdk --strip-components=1
 
       - name: Clone OAF Repo
         run: |
@@ -35,7 +46,7 @@ jobs:
           echo "CONFIG_PACKAGE_open-app-filter=y" >> .config
           echo "CONFIG_PACKAGE_kmod-oaf=y" >> .config
           make defconfig
-          make package/OpenAppFilter/compile V=s -j$(nproc)
+          make package/OpenAppFilter/compile V=s -j"$(nproc)"
 
       - name: Upload IPK
         uses: actions/upload-artifact@v4
